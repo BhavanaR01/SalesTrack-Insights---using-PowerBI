@@ -1,92 +1,81 @@
-Step 1: Import Data
+ShopNext Store Analysis
+This project features a comprehensive Power BI dashboard designed to provide key insights into sales performance for a retail store named "ShopNext." The dashboard uses a variety of visualizations to analyze sales, orders, and customer behavior, helping stakeholders make data-driven decisions.
 
-You’ll need these tables (can be CSV/Excel/SQL source):
+Key Features and Metrics
+The dashboard is divided into several sections, each focusing on a different aspect of the business:
 
-Sales → OrderID, ProductID, CustomerID, Date, Revenue, Quantity, PaymentType
+Total Sales Overview: A quick-glance section showing the total sales (14.2M), delayed orders (7K), and early orders (89K).
 
-Products → ProductID, Category, Subcategory, Price
+Product Performance: Visualizations that rank the top 10 highest and lowest-rated products, allowing for easy identification of popular and underperforming items.
 
-Customers → CustomerID, Location, Age, Gender, FeedbackScore
+Customer & Order Analysis:
 
-Deliveries → OrderID, DeliveryDate, ExpectedDeliveryDate
+Delayed Orders by Product Category: A bar chart showing which product categories have the most delayed orders, helping to pinpoint supply chain or fulfillment issues.
 
-Payments → PaymentID, OrderID, PaymentMode, PaymentStatus
+Early and Delayed Orders by Month: A line chart that tracks the trend of both early and delayed orders over time, providing a clear view of operational efficiency.
 
-🔹 Step 2: Data Modeling
+Revenue and Seasonal Trends:
 
-Create relationships between tables:
+State-Wise Analysis: A bar chart displaying sales performance across different states.
 
-Sales[ProductID] → Products[ProductID]
+Revenue Analysis: A line chart that has trended over the years, from 2017 to 2019.
 
-Sales[CustomerID] → Customers[CustomerID]
+Seasonal Sales Analysis: A bar chart that breaks down sales by quarter, useful for understanding seasonal buying patterns.
 
-Sales[OrderID] → Deliveries[OrderID]
+Payment & Product Insights:
 
-Sales[OrderID] → Payments[OrderID]
+Payment Method Breakdown: A donut chart showing the distribution of sales across different payment methods (e.g., credit card, debit card, voucher).
 
-Mark Date table as a proper date dimension for time intelligence.
+Top 10 Best-Selling Product Categories: A list showing the product categories that generate the most sales.
 
-🔹 Step 3: Create DAX Measures
-📊 Revenue & Sales Performance
-Total Revenue = SUM(Sales[Revenue])
+This dashboard serves as a powerful tool for monitoring business health, identifying areas for improvement, and informing strategic planning.
 
-Total Orders = DISTINCTCOUNT(Sales[OrderID])
+DAX Measures
+The dashboard's dynamic and calculated metrics are powered by DAX (Data Analysis Expressions). Here are some of the key measures likely used to create the visuals:
 
-Avg Order Value = [Total Revenue] / [Total Orders]
+Total Sales: A simple aggregation of the sales amount column.
 
-Revenue Growth % =
-VAR CurrentMonth = [Total Revenue]
-VAR PreviousMonth =
-    CALCULATE([Total Revenue], DATEADD('Date'[Date], -1, MONTH))
-RETURN
-DIVIDE(CurrentMonth - PreviousMonth, PreviousMonth)
+Code snippet
 
-🚚 Delivery Performance
-Delivery Delay Days =
-DATEDIFF(Deliveries[ExpectedDeliveryDate], Deliveries[DeliveryDate], DAY)
+Total Sales = SUM('Sales'[Sales Amount])
+Total Delayed Orders: This measure counts the number of orders where the delivery was after the estimated or due date. It would likely use a combination of COUNTROWS and FILTER.
 
-On-Time Deliveries % =
-DIVIDE(
-    COUNTROWS(FILTER(Deliveries, [Delivery Delay Days] <= 0)),
-    COUNTROWS(Deliveries)
+Code snippet
+
+Total Delayed Orders = 
+CALCULATE(
+    COUNTROWS('Orders'),
+    FILTER(
+        'Orders',
+        'Orders'[Delivery Date] > 'Orders'[Estimated Date]
+    )
 )
+Total Early Orders: Similarly, this measure counts orders delivered before the due date.
 
-💳 Payment Trends
-Failed Payments % =
-DIVIDE(
-    COUNTROWS(FILTER(Payments, Payments[PaymentStatus] = "Failed")),
-    COUNTROWS(Payments)
+Code snippet
+
+Total Early Orders = 
+CALCULATE(
+    COUNTROWS('Orders'),
+    FILTER(
+        'Orders',
+        'Orders'[Delivery Date] < 'Orders'[Estimated Date]
+    )
 )
+Top 10 Rated Products: To identify the top 10 products by rating, a ranking measure is essential, likely using the RANKX function.
 
-😀 Customer Feedback
-Avg Feedback Score = AVERAGE(Customers[FeedbackScore])
+Code snippet
 
-🔹 Step 4: Build Visuals in Power BI
+Product Rank by Rating = 
+RANKX(
+    ALL('Products'[Product Name]),
+    [Average Product Rating],
+    ,
+    DESC
+)
+(Note: This measure would be used in a visual-level filter to show only products where the Product Rank by Rating is less than or equal to 10.)
 
-Sales & Revenue Dashboard
+Revenue by Year: This time intelligence calculation would use a measure like Total Sales and display it over the date hierarchy. The visual itself handles the aggregation by year, but for more complex comparisons (e.g., year-over-year growth), DATESYTD or SAMEPERIODLASTYEAR would be used.
 
-KPI cards: Total Revenue, Total Orders, Avg Order Value
-
-Line chart: Revenue over time
-
-Bar chart: Revenue by Category / Location
-
-Delivery Dashboard
-
-Gauge: On-Time Deliveries %
-
-Histogram: Delivery Delay Days
-
-Map: Delivery performance by city
-
-Payments Dashboard
-
-Pie chart: Payment Mode distribution
-
-KPI: Failed Payments %
-
-Customer Dashboard
-
-Bar chart: Avg Feedback Score by Product Category
-
-Line chart: Feedback Trend over months
+Revenue YTD = TOTALYTD([Total Sales], 'Date'[Date])
+This project demonstrates proficiency in data modeling and DAX to transform raw data into a set of actionable business insights.
